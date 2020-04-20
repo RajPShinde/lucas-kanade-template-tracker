@@ -74,7 +74,7 @@ def affine_matrix(p):
     return W
 
 def lucas_kanade_tracker(ref_points, template_image, next_image):
-    threshold = 0.1
+    threshold = 0.006
     # dp = 10
     # p = np.zeros(6)
     p = np.array([0,0,0,0,0,0], dtype=np.float32)
@@ -92,10 +92,10 @@ def lucas_kanade_tracker(ref_points, template_image, next_image):
 
         # Compute error image
         err = template_image - warp_image
-        err_image = err.reshape(-1, 1)
+        err_image = err.reshape(-1, 1).astype(np.float32)
 
-        Ix = cv.Sobel(next_image, cv.CV_64F, dx=1, dy=0, ksize=5) # ksize -1 for scharr
-        Iy = cv.Sobel(next_image, cv.CV_64F, dx=0, dy=1, ksize=5)
+        Ix = cv.Sobel(next_image, cv.CV_16S, dx=1, dy=0, ksize=1) # ksize -1 for scharr
+        Iy = cv.Sobel(next_image, cv.CV_16S, dx=0, dy=1, ksize=1)
         # abs_ix = np.absolute(Ix)
         # abs_iy = np.absolute(Iy)
 
@@ -152,9 +152,9 @@ def lucas_kanade_tracker(ref_points, template_image, next_image):
         # if np.count_nonzero(H) == 0 :
         #     break
 
-        dp = np.linalg.inv(H) @ (deltaI.T) @ err_image
+        dp = np.linalg.pinv(H) @ (deltaI.T) @ err_image
 
-        print(dp)
+        # print(dp)
         # # p += dp
         # p[0] = p[0] + dp[0, 0] + p[0]*dp[0, 0] + p[2]*dp[1, 0]
         # p[1] = p[1] + dp[1, 0] + p[1]*dp[0, 0] + p[3]*dp[1, 0]
@@ -163,13 +163,13 @@ def lucas_kanade_tracker(ref_points, template_image, next_image):
         # p[4] = p[4] + dp[4, 0] + p[0]*dp[4, 0] + p[2]*dp[5, 0]
         # p[5] = p[5] + dp[5, 0] + p[1]*dp[4, 0] + p[3]*dp[5, 0]
 
-        p[0] += dp[0, 0]*10
-        p[1] += dp[1, 0]*10
-        p[2] += dp[2, 0]*10
-        p[3] += dp[3, 0]*10
-        p[4] += dp[4, 0]*10
-        p[5] += dp[5, 0]*10
-        if(count > 1000):
+        p[0] += dp[0, 0]
+        p[1] += dp[1, 0]
+        p[2] += dp[2, 0]
+        p[3] += dp[3, 0]
+        p[4] += dp[4, 0]
+        p[5] += dp[5, 0]
+        if(count > 100):
             break
         # steepest_images = [np.zeros(shape=template_image.shape) for _ in range(6)]
         # # print(len(steepest_images))
