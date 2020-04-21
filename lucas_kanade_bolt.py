@@ -75,7 +75,7 @@ def affine_matrix(p):
     return W
 
 def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
-    threshold = 0.006
+    threshold = 0.03
     max_iterations = 500
     # dp = 10
     # p = np.zeros(6)
@@ -86,15 +86,21 @@ def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
     ref_points = [ref_points[0][0], ref_points[0][1], ref_points[1][0], ref_points[1][1]]
     count = 0
     W = affine_matrix(p_prev)
-    Ix = cv.Sobel(next_image, cv.CV_16S, dx=1, dy=0, ksize=5) # ksize -1 for scharr
-    Iy = cv.Sobel(next_image, cv.CV_16S, dx=0, dy=1, ksize=5)
+    Ix = cv.Sobel(next_image, cv.CV_16S, dx=1, dy=0, ksize=-1) # ksize -1 for scharr
+    Iy = cv.Sobel(next_image, cv.CV_16S, dx=0, dy=1, ksize=-1)
+    # while(1):
+    #     cv.imshow('Ix', Ix)
+    #     cv.imshow('Iy', Iy)
+    #     key = cv.waitKey(1)
+    #     if key == 27:
+    #         break
     # print(W)
     for it in range(max_iterations):
         count +=1
         # Warped image with template region of interest.
         warp_image = get_region_of_interest(cv.warpAffine(next_image, W, (next_image.shape[1], next_image.shape[0]), flags=cv.INTER_AREA + cv.WARP_INVERSE_MAP), ref_points)
         # warp_image = get_regihmmmon_of_interest(cv.warpAffine(next_image, W, (0, 0), flags=cv.INTER_AREA + cv.WARP_INVERSE_MAP), ref_points)
-        
+        cv.imshow("warped", warp_image)
         # step (2)
         error = template_image - warp_image
 
@@ -118,7 +124,7 @@ def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
         err_image = err.reshape(-1, 1).astype(np.float32)
 
         H = deltaI.T @ deltaI
-        dp = np.linalg.pinv(H) @ (deltaI.T) @ err_image
+        dp = np.linalg.inv(H) @ (deltaI.T) @ err_image
         # print(dp)
         p_prev[0] += dp[0, 0]
         p_prev[1] += dp[1, 0]
@@ -126,54 +132,26 @@ def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
         p_prev[3] += dp[3, 0]
         p_prev[4] += dp[4, 0]
         p_prev[5] += dp[5, 0]
-         # step (4)
-        # g_img_w_height, g_img_w_width = gx_img_w.shape
-        # x, y = np.meshgrid(np.arange(g_img_w_width), np.arange(g_img_w_height))
-        # zero = np.zeros_like(x)
-        # one = np.ones_like(x)
-        # gp_warp = np.array([[x, y, one, zero, zero, zero],
-        #                     [zero, zero, zero, x, y, one]], dtype='d')
-
-        # # step (5)
-        # g_img_w = np.stack((gx_img_w, gy_img_w), axis=0)
-        # # compute the steepest descent images
-        # sd_imgs = np.einsum('jhw,jihw->ihw', g_img_w, gp_warp)
-
-        # # step (6)
-        # sd_imgs_flat = sd_imgs.reshape(6, -1)
-        # hessian = sd_imgs_flat.dot(sd_imgs_flat.T)
-
-        # # step (7)
-        # # steepest descent parameter update
-        # sd_updates = sd_imgs_flat.dot(error.ravel())
-
-        # # step (8)
-        # p_update = sd_updates.dot(np.linalg.inv(hessian)).reshape(p.shape)
-
-        # # step (9)
-        # p += p_update
 
         if np.linalg.norm(dp) < threshold:
             break;
         W = affine_matrix(p_prev)
 
     print("iterations: ", count)
-    # affine_transform_matrix = affine_matrix(p_prev) #np.array([[1.0 + p[0], p[1], p[2]], [p[3], 1.0 + p[4], p[5]]])
-    return p_prev
+      return p_prev
 
+# Main Program
 all_images = read_bolt()
-# original_image = all_images[1]
-# read_template(all_images[1])
-
-# print(point)
-# print(template_image.shape)
 p_init1 = np.zeros(6)
 p_init2 = np.zeros(6)
 p_init3 = np.zeros(6)
+p_init4 = np.zeros(6)
+p_init5 = np.zeros(6)
+p_init6 = np.zeros(6)
 template_image = np.array([])
 for i in range(2, 294):
     print(i);
-    if i < 158:
+    if i < 51:
         # point = np.array([])
         point = np.array([(269, 75), (303, 139)])
         region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
@@ -203,9 +181,9 @@ for i in range(2, 294):
         output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
         cv.imshow("tracker",output)
         out.write(output)
-    elif i > 157 and i < 207:
+    elif i > 50 and i < 101:
         # point = np.array([])
-        point = np.array([(290, 81), (324, 145)])
+        point = np.array([(238, 78), (272, 142)])
         region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
         template_image = region_of_interest
         
@@ -234,9 +212,9 @@ for i in range(2, 294):
         output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
         cv.imshow("tracker",output)
         out.write(output)
-    elif i > 206 and i < 294:
+    elif i > 100 and i < 151:
         # point = np.array([])
-        point = np.array([(349, 91), (383, 155)])
+        point = np.array([(253, 76), (287, 170)])
         region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
         template_image = region_of_interest
         
@@ -265,96 +243,99 @@ for i in range(2, 294):
         output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
         cv.imshow("tracker",output)
         out.write(output)
-    # elif i > 150 and i < 201:
-    #     # point = np.array([])
-    #     point = np.array([(276, 75), (310, 139)])
-    #     region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
-    #     template_image = region_of_interest
+    elif i > 150 and i < 201:
+        # point = np.array([])
+        point = np.array([(276, 75), (310, 139)])
+        region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
+        template_image = region_of_interest
         
 
-    #     lab = cv.cvtColor(template_image, cv.COLOR_BGR2LAB)
-    #     l, a, b = cv.split(lab)
-    #     clahe = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    #     template_image = clahe.apply(l)
-    #     rect1 = np.array([[point[0][0], point[0][1]], [point[1][0], point[0][1]], [point[1][0], point[1][1]], [point[0][0], point[1][1]]])
+        lab = cv.cvtColor(template_image, cv.COLOR_BGR2LAB)
+        l, a, b = cv.split(lab)
+        clahe = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        template_image = clahe.apply(l)
+        rect1 = np.array([[point[0][0], point[0][1]], [point[1][0], point[0][1]], [point[1][0], point[1][1]], [point[0][0], point[1][1]]])
 
-    #     # next_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2GRAY)
-    #     lab_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2LAB)
-    #     # Splitting the LAB image to different channels
-    #     l1, a1, b1 = cv.split(lab_image)
-    #     # Applying CLAHE to L-channel---
-    #     clahe1 = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    #     next_image = clahe1.apply(l1)
+        # next_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2GRAY)
+        lab_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2LAB)
+        # Splitting the LAB image to different channels
+        l1, a1, b1 = cv.split(lab_image)
+        # Applying CLAHE to L-channel---
+        clahe1 = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        next_image = clahe1.apply(l1)
 
-    #     new_affine_matrix = lucas_kanade_tracker(point, template_image, next_image)
-    #     rectTemp = np.dot(new_affine_matrix, np.vstack((rect1.T, np.ones((1,4))))).T
-    #     [xmax, ymax] = list(np.max(rectTemp, axis = 0).astype(np.int))
-    #     [xmin, ymin] = list(np.min(rectTemp, axis = 0).astype(np.int))
-    #     #create new rectangle/bounding box
-    #     rect_updated_1=np.array([[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax]])        
-    #     output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
-    #     cv.imshow("tracker",output)
-    #     out.write(output)
-    # elif i > 200 and i < 251:
-    #     # point = np.array([])
-    #     point = np.array([(352, 77), (386, 141)])
-    #     region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
-    #     template_image = region_of_interest
+        p_init4 = lucas_kanade_tracker(point, template_image, next_image, p_init4)
+        w = affine_matrix(p_init4)
+        rectTemp = np.dot(w, np.vstack((rect1.T, np.ones((1,4))))).T
+        [xmax, ymax] = list(np.max(rectTemp, axis = 0).astype(np.int))
+        [xmin, ymin] = list(np.min(rectTemp, axis = 0).astype(np.int))
+        #create new rectangle/bounding box
+        rect_updated_1=np.array([[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax]])        
+        output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
+        cv.imshow("tracker",output)
+        out.write(output)
+    elif i > 200 and i < 251:
+        # point = np.array([])
+        point = np.array([(352, 77), (386, 141)])
+        region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
+        template_image = region_of_interest
         
 
-    #     lab = cv.cvtColor(template_image, cv.COLOR_BGR2LAB)
-    #     l, a, b = cv.split(lab)
-    #     clahe = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    #     template_image = clahe.apply(l)
-    #     rect1 = np.array([[point[0][0], point[0][1]], [point[1][0], point[0][1]], [point[1][0], point[1][1]], [point[0][0], point[1][1]]])
+        lab = cv.cvtColor(template_image, cv.COLOR_BGR2LAB)
+        l, a, b = cv.split(lab)
+        clahe = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        template_image = clahe.apply(l)
+        rect1 = np.array([[point[0][0], point[0][1]], [point[1][0], point[0][1]], [point[1][0], point[1][1]], [point[0][0], point[1][1]]])
 
-    #     # next_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2GRAY)
-    #     lab_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2LAB)
-    #     # Splitting the LAB image to different channels
-    #     l1, a1, b1 = cv.split(lab_image)
-    #     # Applying CLAHE to L-channel---
-    #     clahe1 = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    #     next_image = clahe1.apply(l1)
+        # next_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2GRAY)
+        lab_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2LAB)
+        # Splitting the LAB image to different channels
+        l1, a1, b1 = cv.split(lab_image)
+        # Applying CLAHE to L-channel---
+        clahe1 = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        next_image = clahe1.apply(l1)
 
-    #     new_affine_matrix = lucas_kanade_tracker(point, template_image, next_image)
-    #     rectTemp = np.dot(new_affine_matrix, np.vstack((rect1.T, np.ones((1,4))))).T
-    #     [xmax, ymax] = list(np.max(rectTemp, axis = 0).astype(np.int))
-    #     [xmin, ymin] = list(np.min(rectTemp, axis = 0).astype(np.int))
-    #     #create new rectangle/bounding box
-    #     rect_updated_1=np.array([[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax]])        
-    #     output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
-    #     cv.imshow("tracker",output)
-    #     out.write(output)
-    # elif i > 250 and i < 294:
-    #     # point = np.array([])
-    #     point = np.array([(365, 106), (399, 170)])
-    #     region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
-    #     template_image = region_of_interest
+        p_init5 = lucas_kanade_tracker(point, template_image, next_image, p_init5)
+        w = affine_matrix(p_init5)
+        rectTemp = np.dot(w, np.vstack((rect1.T, np.ones((1,4))))).T
+        [xmax, ymax] = list(np.max(rectTemp, axis = 0).astype(np.int))
+        [xmin, ymin] = list(np.min(rectTemp, axis = 0).astype(np.int))
+        #create new rectangle/bounding box
+        rect_updated_1=np.array([[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax]])        
+        output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
+        cv.imshow("tracker",output)
+        out.write(output)
+    elif i > 250 and i < 294:
+        # point = np.array([])
+        point = np.array([(365, 106), (399, 170)])
+        region_of_interest = all_images[1][point[0][1]:point[1][1], point[0][0]:point[1][0]]
+        template_image = region_of_interest
         
 
-    #     lab = cv.cvtColor(template_image, cv.COLOR_BGR2LAB)
-    #     l, a, b = cv.split(lab)
-    #     clahe = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    #     template_image = clahe.apply(l)
-    #     rect1 = np.array([[point[0][0], point[0][1]], [point[1][0], point[0][1]], [point[1][0], point[1][1]], [point[0][0], point[1][1]]])
+        lab = cv.cvtColor(template_image, cv.COLOR_BGR2LAB)
+        l, a, b = cv.split(lab)
+        clahe = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        template_image = clahe.apply(l)
+        rect1 = np.array([[point[0][0], point[0][1]], [point[1][0], point[0][1]], [point[1][0], point[1][1]], [point[0][0], point[1][1]]])
 
-    #     # next_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2GRAY)
-    #     lab_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2LAB)
-    #     # Splitting the LAB image to different channels
-    #     l1, a1, b1 = cv.split(lab_image)
-    #     # Applying CLAHE to L-channel---
-    #     clahe1 = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    #     next_image = clahe1.apply(l1)
+        # next_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2GRAY)
+        lab_image = cv.cvtColor(all_images[i], cv.COLOR_BGR2LAB)
+        # Splitting the LAB image to different channels
+        l1, a1, b1 = cv.split(lab_image)
+        # Applying CLAHE to L-channel---
+        clahe1 = cv.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        next_image = clahe1.apply(l1)
 
-    #     new_affine_matrix = lucas_kanade_tracker(point, template_image, next_image)
-    #     rectTemp = np.dot(new_affine_matrix, np.vstack((rect1.T, np.ones((1,4))))).T
-    #     [xmax, ymax] = list(np.max(rectTemp, axis = 0).astype(np.int))
-    #     [xmin, ymin] = list(np.min(rectTemp, axis = 0).astype(np.int))
-    #     #create new rectangle/bounding box
-    #     rect_updated_1=np.array([[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax]])        
-    #     output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
-    #     cv.imshow("tracker",output)
-    #     out.write(output)
+        p_init6 = lucas_kanade_tracker(point, template_image, next_image, p_init6)
+        w = affine_matrix(p_init6)
+        rectTemp = np.dot(w, np.vstack((rect1.T, np.ones((1,4))))).T
+        [xmax, ymax] = list(np.max(rectTemp, axis = 0).astype(np.int))
+        [xmin, ymin] = list(np.min(rectTemp, axis = 0).astype(np.int))
+        #create new rectangle/bounding box
+        rect_updated_1=np.array([[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax]])        
+        output = cv.polylines(all_images[i],[rect_updated_1],True,(0,0,255),thickness = 2)
+        cv.imshow("tracker",output)
+        out.write(output)
 
     k = cv.waitKey(20) & 0xFF
     if k == 27:
