@@ -27,8 +27,6 @@ def lucas_kanade_tracker(img, tmp, rect, p_prev):
     cost_function = 1
     threshold = 0.1 #check different threshold
     W = affine_matrix(p_prev)    
-    
-#    tmp_2 = copy.deepcopy(tmp)
 
     while cost_function > threshold:
         iterations = iterations + 1
@@ -37,26 +35,10 @@ def lucas_kanade_tracker(img, tmp, rect, p_prev):
         Iw = cv.warpAffine(img, W, (0, 0), flags=cv.INTER_CUBIC + cv.WARP_INVERSE_MAP)#combination trial      
         Iw = Iw[rect[0,1]:rect[2,1] , rect[0,0]:rect[2,0]]
         cv.imshow("warped", Iw)
-#        Iw_2 = copy.deepcopy(Iw)   
-        
-        #Todo
-        #Check if brightness has decreased for a frame and then increase it
-#        print("warped: "+str(np.linalg.norm(Iw)))
-#        print("template: "+str(np.linalg.norm(tmp)))
-        
-        """if np.linalg.norm(Iw) < 10000.0:
-            tmp = cv.equalizeHist(Iw)
-            Iw = adjust_brightness(tmp, 3)
-            print("adjusted")"""
-            
-#        if np.linalg.norm(Iw) < np.linalg.norm(tmp):
-#            img = adjust_brightness(img, gamma = 1.5)
-        
+
         #calculating error - step 2
         error = tmp.flatten().astype(np.int)-Iw.flatten().astype(np.int)
-#        error = error**2
-#        cv2.imshow("error", cv2.subtract(tmp_2, Iw_2))
-   
+
         #calculate the gradient of main image along x and y - step 3
         grad_x = cv.Sobel(np.float32(img), cv.CV_64F, 1, 0, ksize =5) #changing kernel size improved results at start
         grad_y = cv.Sobel(np.float32(img), cv.CV_64F, 0, 1, ksize =5)
@@ -110,9 +92,9 @@ vid_output = cv.VideoWriter('lkt_baby.avi', cv.VideoWriter_fourcc('M', 'J', 'P',
 
 
 rect1 = np.array([[160,83], [216,83], [216,148], [160,148]])
-#rect2 = np.array([[132,63], [205,63], [205,119], [132,119]])
+
 rect2 = np.array([[152,118], [227,118], [227,236], [152,236]])
-#rect3 = np.array([[194,63], [270,63], [270,116], [194,116]])
+
 rect3 = np.array([[182,65], [248,65], [248,115], [182,115]])
 
 param_1 = np.zeros(6) 
