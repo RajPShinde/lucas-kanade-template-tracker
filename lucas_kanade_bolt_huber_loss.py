@@ -1,18 +1,3 @@
-# https://www.youtube.com/watch?v=7soIa95QNDk
-# https://docs.opencv.org/trunk/da/d6e/tutorial_py_geometric_transformations.html
-# https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html
-# https://github.com/waynezv/Computer-Vision/tree/master/HW4/code
-# https://www.mathworks.com/matlabcentral/fileexchange/24677-lucas-kanade-affine-template-tracking?focused=5139141&tab=function
-# https://cs.brown.edu/courses/csci1950-g/asgn/proj6/resources/ImageWarping.pdf
-# https://docs.opencv.org/master/da/d85/tutorial_js_gradients.html
-
-# https://github.com/topics/lucas-kanade
-# https://github.com/AVINASH793/Lucas-Kanade-Tracker/blob/master/Lucas_Kanade_Own.py
-# https://github.com/ziliHarvey/Lucas-Kanade-tracking-and-Correlation-Filters/blob/master/src/LucasKanadeAffine.py
-# https://github.com/t-martyniuk/Lucas-Kanade-Tracking/blob/master/task3.py
-
-# https://www.life2coding.com/crop-image-using-mouse-click-movement-python/
-# https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_geometric_transformations/py_geometric_transformations.html
 import sys, os
 try:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
@@ -24,7 +9,7 @@ from collections import defaultdict
 from matplotlib import pyplot as plt
 
 path_bolt = '/home/prasheel/Workspace/ENPM673/Project4/Bolt2/img'
-out = cv.VideoWriter('lkt_on_bolt_code_new.avi', cv.VideoWriter_fourcc('M','J','P','G'), 15, (480, 270))
+out = cv.VideoWriter('lkt_on_bolt_huber_code_best.avi', cv.VideoWriter_fourcc('M','J','P','G'), 15, (480, 270))
 
 def read_bolt():    
     bolt_data = 294
@@ -75,56 +60,48 @@ def affine_matrix(p):
     return W
 
 def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
-    threshold = 0.03
+    threshold = 1
     max_iterations = 500
-    # dp = 10
-    # p = np.zeros(6)
-    # p = p_prev
-    # dp = np.array([120,120,120,120,120,120], dtype=np.float32)
-
-    # template_image = cv.equalizeHist(template_image)
+    dp =0.01
     ref_points = [ref_points[0][0], ref_points[0][1], ref_points[1][0], ref_points[1][1]]
     count = 0
     W = affine_matrix(p_prev)
-    Ix = cv.Sobel(next_image, cv.CV_16S, dx=1, dy=0, ksize=-1) # ksize -1 for scharr
-    Iy = cv.Sobel(next_image, cv.CV_16S, dx=0, dy=1, ksize=-1)
-    # while(1):
-    #     cv.imshow('Ix', Ix)
-    #     cv.imshow('Iy', Iy)
-    #     key = cv.waitKey(1)
-    #     if key == 27:
-    #         break
-    # print(W)
-    for it in range(max_iterations):
+    Ix = cv.Sobel(next_image, cv.CV_16S, dx=1, dy=0, ksize=7)
+    Iy = cv.Sobel(next_image, cv.CV_16S, dx=0, dy=1, ksize=7)
+
+    while np.linalg.norm(dp) < threshold: #for it in range(max_iterations):
+        # print("inside loop")
         count +=1
         # Warped image with template region of interest.
         warp_image = get_region_of_interest(cv.warpAffine(next_image, W, (next_image.shape[1], next_image.shape[0]), flags=cv.INTER_AREA + cv.WARP_INVERSE_MAP), ref_points)
-        # warp_image = get_regihmmmon_of_interest(cv.warpAffine(next_image, W, (0, 0), flags=cv.INTER_AREA + cv.WARP_INVERSE_MAP), ref_points)
-        cv.imshow("warped", warp_image)
+        
         # step (2)
         error = template_image - warp_image
-
+        err_image = np.reshape(error, (-1, 1)).astype(np.float32)
+        sigma = np.std(err_image)
+        p_error_norm = np.linalg.norm(err_image)
 
         gx_img_w = get_region_of_interest(cv.warpAffine(Ix, W, (Ix.shape[1], Ix.shape[0]), flags=cv.INTER_AREA + cv.WARP_INVERSE_MAP), ref_points)
         gy_img_w = get_region_of_interest(cv.warpAffine(Iy, W, (Iy.shape[1], Iy.shape[0]), flags=cv.INTER_AREA + cv.WARP_INVERSE_MAP), ref_points)
         I = np.vstack((gx_img_w.ravel(), gy_img_w.ravel())).T
-
+        
         deltaI = np.zeros((template_image.shape[0] * template_image.shape[1], 6))
-
+        
         # Compute steepest gradient
         for i in range(template_image.shape[0]):
             for j in range(template_image.shape[1]):
                 I_individual = np.array([I[i * template_image.shape[1] + j]]).reshape(1, 2)
-
                 jacobian_individual = np.array([[j, 0, i, 0, 1, 0], [0, j, 0, i, 0, 1]])
-
                 deltaI[i * template_image.shape[1] + j] = I_individual @ jacobian_individual
 
-        err = template_image - warp_image
-        err_image = err.reshape(-1, 1).astype(np.float32)
+        t = p_error_norm ** 2
+        if t <= sigma ** 2:
+            rho = 0.5 * t
+        else:
+            rho = sigma * np.sqrt(t) - 0.5 * sigma ** 2
 
-        H = deltaI.T @ deltaI
-        dp = np.linalg.inv(H) @ (deltaI.T) @ err_image
+        H = rho * deltaI.T @ deltaI
+        dp = np.linalg.pinv(H) @ (deltaI.T) @ err_image
         # print(dp)
         p_prev[0] += dp[0, 0]
         p_prev[1] += dp[1, 0]
@@ -132,13 +109,13 @@ def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
         p_prev[3] += dp[3, 0]
         p_prev[4] += dp[4, 0]
         p_prev[5] += dp[5, 0]
-
-        if np.linalg.norm(dp) < threshold:
-            break;
+        # print(np.linalg.norm(dp))
+        if count > max_iterations:
+            return p_prev
         W = affine_matrix(p_prev)
 
     print("iterations: ", count)
-      return p_prev
+    return p_prev
 
 # Main Program
 all_images = read_bolt()
