@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 path_bolt = '/home/prasheel/Workspace/ENPM673/Project4/Bolt2/img'
 out = cv.VideoWriter('lkt_on_bolt_huber_code_best.avi', cv.VideoWriter_fourcc('M','J','P','G'), 15, (480, 270))
 
+# Read images of bolt
 def read_bolt():    
     bolt_data = 294
     all_imgs = defaultdict(list)
@@ -49,16 +50,15 @@ def read_template(img):
         if key == 27:
             break
 
+# Get region of interest from the image
 def get_region_of_interest(image, roi_points):
     return image[roi_points[1]:roi_points[3], roi_points[0]:roi_points[2]]
-
-def jacobian(x,y):
-    return np.array([[x, 0, y, 0, 1, 0], [0, x, 0, y, 0, 1]], dtype=np.float32)
 
 def affine_matrix(p):    
     W = np.array([[1, 0, 0], [0, 1, 0]]) + p.reshape((2,3), order = 'F')
     return W
 
+# Main function lucas kanade tracker
 def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
     threshold = 1
     max_iterations = 500
@@ -75,7 +75,6 @@ def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
         # Warped image with template region of interest.
         warp_image = get_region_of_interest(cv.warpAffine(next_image, W, (next_image.shape[1], next_image.shape[0]), flags=cv.INTER_AREA + cv.WARP_INVERSE_MAP), ref_points)
         
-        # step (2)
         error = template_image - warp_image
         err_image = np.reshape(error, (-1, 1)).astype(np.float32)
         sigma = np.std(err_image)
@@ -102,23 +101,28 @@ def lucas_kanade_tracker(ref_points, template_image, next_image, p_prev):
 
         H = rho * deltaI.T @ deltaI
         dp = np.linalg.pinv(H) @ (deltaI.T) @ err_image
-        # print(dp)
+
         p_prev[0] += dp[0, 0]
         p_prev[1] += dp[1, 0]
         p_prev[2] += dp[2, 0]
         p_prev[3] += dp[3, 0]
         p_prev[4] += dp[4, 0]
         p_prev[5] += dp[5, 0]
-        # print(np.linalg.norm(dp))
+        
         if count > max_iterations:
+            print("iterations: ", count)
             return p_prev
         W = affine_matrix(p_prev)
 
     print("iterations: ", count)
     return p_prev
 
-# Main Program
+
+
+# Main Program start
 all_images = read_bolt()
+
+# Initialise p matrix
 p_init1 = np.zeros(6)
 p_init2 = np.zeros(6)
 p_init3 = np.zeros(6)
@@ -126,6 +130,8 @@ p_init4 = np.zeros(6)
 p_init5 = np.zeros(6)
 p_init6 = np.zeros(6)
 template_image = np.array([])
+
+# loop through all images
 for i in range(2, 294):
     print(i);
     if i < 51:
@@ -317,5 +323,6 @@ for i in range(2, 294):
     k = cv.waitKey(20) & 0xFF
     if k == 27:
         break 
+        
 out.release()   
 cv.destroyAllWindows()
