@@ -22,48 +22,32 @@ def affine_matrix(p):
     W = np.array([[1, 0, 0], [0, 1, 0]]) + p.reshape((2,3), order = 'F')
     return W
 
+def huber_loss(error):
+    threshold=0.8
+    if np.linalg.norm(error)<threshold:
+        return 0.5*(np.linalg.norm(error)**2)
+    else:
+        return (threshold*np.linalg.norm(error))-(0.5*threshold**2)
+
 def lucas_kanade_tracker(img, tmp, rect, p_prev, flag):
     iterations = 0
     gain = 10
     cost_function = 1
-    threshold = 0.006 #check different threshold
+    threshold = 0.006
     W = affine_matrix(p_prev)    
-    
-#    tmp_2 = copy.deepcopy(tmp)
-#    clahe = cv.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8))
-#    img = clahe.apply(img)
-#    tmp = clahe.apply(tmp)
-    
+   
 
     while cost_function > threshold:
+#        cv.waitKey(1)
         iterations = iterations + 1
         
         #form the warped image  - Step 1
         Iw = cv.warpAffine(img, W, (0, 0), flags=cv.INTER_CUBIC + cv.WARP_INVERSE_MAP)#combination trial 
-        
-        Iw = Iw[rect[0,1]:rect[2,1] , rect[0,0]:rect[2,0]]
         cv.imshow("warped", Iw)
-#        cv.imshow("warped", Iw)
-#        Iw_2 = copy.deepcopy(Iw)   
-        
-        #Todo
-        #Check if brightness has decreased for a frame and then increase it
-#        print("warped: "+str(np.linalg.norm(Iw)))
-#        print("template: "+str(np.linalg.norm(tmp)))
-        
-        """if np.linalg.norm(Iw) < 10000.0:
-            tmp = cv.equalizeHist(Iw)
-            Iw = adjust_brightness(tmp, 3)
-            print("adjusted")"""
-            
-#        if np.linalg.norm(Iw) < np.linalg.norm(tmp):
-#            img = adjust_brightness(img, gamma = 1.5)
-#        
-#        if np.linalg.norm(Iw) > np.linalg.norm(tmp):
-#            img = adjust_brightness(img, gamma = 0.8)
+        Iw = Iw[rect[0,1]:rect[2,1] , rect[0,0]:rect[2,0]]
+
         #calculating error - step 2
         error = tmp.flatten().astype(np.float32)-Iw.flatten().astype(np.float32)
-#        cv2.imshow("error", cv2.subtract(tmp_2, Iw_2))
    
         #calculate the gradient of main image along x and y - step 3
         if flag == 0:
@@ -117,20 +101,17 @@ def lucas_kanade_tracker(img, tmp, rect, p_prev, flag):
 
         if(iterations > 1000):
             break
-#    print("iterations : " + str(iterations))
-#        cv.destroyWindow("warped")
     return p_prev
 
 vid_output = cv.VideoWriter('lkt_car.avi', cv.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (images[0].shape[1], images[0].shape[0]))
 
 
 rect1 = np.array([[70,51], [177,51], [177,138], [70,138]])
-#rect2 = np.array([[132,63], [205,63], [205,119], [132,119]])
+
 rect2 = np.array([[136,61], [209,61], [209,110], [136,110]])
-#rect3 = np.array([[202,69], [257,69], [257,114], [202,114]]) #300
+
 rect3 = np.array([[203,69], [267,69], [267,116], [203,116]])
-#rect3 = np.array([[182,65], [248,65], [248,115], [182,115]])
-#rect4 = np.array([[203,69], [267,69], [267,116], [203,116]])
+
 rect4 = np.array([[185,69], [255,69], [255,120], [185,120]])
 
 rect214 = np.array([[146,68], [213,68], [213,123], [146,123]])
@@ -142,8 +123,7 @@ param_4 = np.zeros(6)
 
 template1 = images[0][rect1[0,1]:rect1[2,1] , rect1[0,0]:rect1[2,0]]
 template2 = images[200][rect2[0,1]:rect2[2,1] , rect2[0,0]:rect2[2,0]]
-#template3 = images[315][rect3[0,1]:rect3[2,1] , rect3[0,0]:rect3[2,0]]
-#template3 = images[264][rect3[0,1]:rect3[2,1] , rect3[0,0]:rect3[2,0]]
+
 template3 = images[214][rect214[0,1]:rect214[2,1] , rect214[0,0]:rect214[2,0]]
 template4 = images[274][rect4[0,1]:rect4[2,1] , rect4[0,0]:rect4[2,0]]
 
@@ -170,15 +150,7 @@ for i in range(1,len(images)):
         cv.imshow("tracker",output)
         if i == 213:
             cv.destroyWindow("warped")
-    elif i >= 200 and i < 214:
-        param_2 = lucas_kanade_tracker(images[i], template2, rect2, param_2, flag = 0)
-        w2 = affine_matrix(param_2)
-        temp_rect_2 = np.dot(w2,np.vstack((rect2.T, np.ones((1,4))))).T
-        [xmax2, ymax2] = list(np.max(temp_rect_2, axis = 0).astype(np.int))
-        [xmin2, ymin2] = list(np.min(temp_rect_2, axis = 0).astype(np.int))
-        rect_updated_2=np.array([[xmin2,ymin2],[xmax2,ymin2],[xmax2,ymax2],[xmin2,ymax2]])        
-        output = cv.polylines(original_frame[i],[rect_updated_2],True,(0,0,255),thickness = 2)
-        cv.imshow("tracker",output)
+    
     elif i >= 214 and i < 274:
         param_3 = lucas_kanade_tracker(images[i], template3, rect214, param_3, flag = 0)
         w3 = affine_matrix(param_3)
@@ -198,12 +170,11 @@ for i in range(1,len(images)):
         rect_updated_4 = np.array([[xmin4,ymin4],[xmax4,ymin4],[xmax4,ymax4],[xmin4,ymax4]])        
         output = cv.polylines(original_frame[i],[rect_updated_4],True,(0,0,255),thickness = 2)
         vid_output.write(output)
-        cv.imshow("tracker",output)
-        
-    
+        cv.imshow("tracker",output)    
     
     k = cv.waitKey(20) & 0xFF
     if k == 27:
         break 
 vid_output.release()
 cv.destroyAllWindows()
+
