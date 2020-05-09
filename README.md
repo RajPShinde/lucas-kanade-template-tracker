@@ -1,9 +1,10 @@
 # Lucas Kanade Tracker
 
+
 ## Authors
-Raj Prakash Shinde- 116852104
-Shubham Sonawane- 116808996
-Prasheel Renkuntla- 116925570
+* **Shubham Sonawane**
+* **Prasheel Renkuntla**
+* **Raj Prakash Shinde**
 
 ## Description
 The project contains the implementation of Lucas Kanade Tracker. The Tracker is tests on three databases viz. Bolt2, Car4 and Dragon Baby. Additionally Huber Loss Function and Histogram Equilization is being implimented to better the results. 
