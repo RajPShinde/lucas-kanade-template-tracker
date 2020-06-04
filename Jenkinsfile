@@ -8,7 +8,7 @@ pipeline {
         }
         stage('Trial stage') {
             steps {
-                echo 'Run the trial' 
+                echo 'Run the trial - returns' 
             }
         }
         stage('Compile') {
