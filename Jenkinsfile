@@ -6,6 +6,11 @@ pipeline {
                 echo 'Run the static analysis to the code' 
             }
         }
+        stage('Trial stage') {
+            steps {
+                echo 'Run the trial' 
+            }
+        }
         stage('Compile') {
             steps {
                 echo 'Compile the source code' 
