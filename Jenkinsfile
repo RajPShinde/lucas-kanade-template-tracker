@@ -11,6 +11,11 @@ pipeline {
                 echo 'Run the trial - returns' 
             }
         }
+        stage('Ngrock stage') {
+            steps {
+                echo 'Run the trial for ngrock' 
+            }
+        }
         stage('Compile') {
             steps {
                 echo 'Compile the source code' 
