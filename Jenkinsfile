@@ -7,6 +7,11 @@ pipeline {
             }
         }
         stage('Trial stage') {
+            when{
+                expression{
+                    BRANCH_NAME = 'dev'
+                }
+            }
             steps {
                 echo 'Finale' 
             }
