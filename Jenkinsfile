@@ -9,7 +9,7 @@ pipeline {
         stage('Trial stage') {
             when {
                 expression {
-                    BRANCH_NAME == 'master'
+                    env.BRANCH_NAME == 'master'
                 }
             }
             steps {
