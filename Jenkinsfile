@@ -3,13 +3,13 @@ pipeline {
     stages {
         stage('Static Analysis') {
             steps {
-                echo 'Run the static analysis to the code' 
+                echo 'Run the  analysis to the code' 
             }
         }
         stage('Trial stage') {
             when{
                 expression{
-                    BRANCH_NAME = 'dev'
+                    BRANCH_NAME = 'master'
                 }
             }
             steps {
