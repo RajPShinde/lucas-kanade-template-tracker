@@ -7,8 +7,8 @@ pipeline {
             }
         }
         stage('Trial stage') {
-            when{
-                expression{
+            when {
+                expression {
                     BRANCH_NAME == 'master'
                 }
             }
