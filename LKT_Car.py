@@ -1,7 +1,7 @@
 import cv2 as cv
 import glob
 import numpy as np
-import copy
+
 
 images = []
 original_frame = []
