@@ -4,7 +4,7 @@ pipeline {
         stage('Static Analysis') {
             steps {
                 echo 'Run the  analysis to the code' 
-                
+                echo "${env.JENKINS_URL}"
             }
         }
         stage('Trial stage') {
