@@ -4,6 +4,7 @@ pipeline {
         stage('Static Analysis') {
             steps {
                 echo 'Run the  analysis to the code' 
+                echo "${env.GIT_BRANCH}"
             }
         }
         stage('Trial stage') {
