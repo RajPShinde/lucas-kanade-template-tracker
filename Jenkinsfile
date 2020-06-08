@@ -25,6 +25,7 @@ pipeline {
         stage('Compile') {
             steps {
                 echo 'Compile the source code' 
+                sh 'make build'
             }
         }
         stage('Security Check') {
