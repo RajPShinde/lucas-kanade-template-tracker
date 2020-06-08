@@ -14,7 +14,7 @@ pipeline {
                 }
             }
             steps {
-                echo 'Finale' 
+                echo 'Trial stage' 
             }
         }
         stage('Ngrock stage') {
